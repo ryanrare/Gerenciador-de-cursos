@@ -10,8 +10,18 @@ __long_description__ = 'This is an API to Flask Api Users'
 __author__ = 'Lucas Simon'
 __author_email__ = 'lucassrod@gmail.com'
 
+testing_extras = [
+    'pytest',
+    'pytest-cov',
+]
+
 setup(
     name='api',
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest'],
+    extras_require={
+        'testing': testing_extras,
+    },
     version=__version__,
     author=__author__,
     author_email=__author_email__,
