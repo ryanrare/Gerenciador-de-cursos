@@ -16,6 +16,7 @@ def create_app(config_name):
     ma = Marshmallow(app)
 
     db.init_app(app)
+    ma.init_app(app)
 
     configure_api(app)
 
