@@ -5,7 +5,7 @@ from flask_marshmallow import Marshmallow
 from config import config
 
 from .api import configure_api
-from .db import db
+from .db import init_db
 
 
 def create_app(config_name):
@@ -15,8 +15,8 @@ def create_app(config_name):
 
     ma = Marshmallow(app)
 
-    db.init_app(app)
     ma.init_app(app)
+    init_db(app)
 
     configure_api(app)
 
