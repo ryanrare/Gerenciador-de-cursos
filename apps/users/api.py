@@ -1,5 +1,6 @@
 from werkzeug.security import generate_password_hash
 from flask import jsonify, request
+from flask_jwt_extended import create_access_token
 from .models import User, user_schema
 from apps import db
 
@@ -37,3 +38,22 @@ def post_user():
         session.rollback()
         session.close()
         return jsonify({'message': 'unable to create', 'data': {}}), 500
+
+
+def authenticate_user(username, password):
+    user = User.query.filter_by(username=username).first()
+    if user and user.check_password(password):
+        return user
+    return None
+
+
+def login_with_jwt():
+    username = request.json.get('username')
+    password = request.json.get('password')
+
+    user = authenticate_user(username, password)
+    if user:
+        access_token = create_access_token(identity=user.username)
+        return jsonify(access_token=access_token), 200
+    else:
+        return jsonify({'message': 'Invalid credentials'}), 401

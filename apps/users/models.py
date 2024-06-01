@@ -1,5 +1,6 @@
 from datetime import datetime
 from apps.db import db, ma
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 class User(db.Model):
@@ -15,7 +16,10 @@ class User(db.Model):
     def __init__(self, username, email, password_hash):
         self.username = username
         self.email = email
-        self.password_hash = password_hash
+        self.password_hash = generate_password_hash(password_hash)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
 
 class UserSchema(ma.SQLAlchemyAutoSchema):
