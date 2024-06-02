@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
-
 from os import getenv
 from os.path import dirname, isfile, join
 
 from dotenv import load_dotenv
 
 from apps import create_app
-
+from apps.db import init_db
 
 _ENV_FILE = join(dirname(__file__), '.env')
 
