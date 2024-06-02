@@ -34,10 +34,12 @@ def session(_db):
 @pytest.fixture(scope='module')
 def test_client():
     flask_app = create_app('testing')
+    flask_app.config.update({
+        "TESTING": True,
+        "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:"
+    })
+
     with flask_app.app_context():
         db.create_all()
-        testing_client = flask_app.test_client()
-
-        yield testing_client
-
+        yield flask_app.test_client()
         db.drop_all()

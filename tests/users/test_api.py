@@ -30,7 +30,8 @@ def add_user_to_db(test_client, new_user):
     with test_client.application.app_context():
         db.session.add(new_user)
         db.session.commit()
-    yield
+        access_token = create_access_token(identity=new_user.id)
+    yield access_token
     with test_client.application.app_context():
         db.session.delete(new_user)
         db.session.commit()
