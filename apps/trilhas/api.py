@@ -1,0 +1,62 @@
+from flask import jsonify, request
+from .models import Trilha
+from apps import db
+
+
+def get_all_trilhas():
+    trilhas = Trilha.query.all()
+    trilhas_data = [{'id': trilha.id, 'titulo': trilha.titulo, 'descricao': trilha.descricao} for trilha in trilhas]
+    return jsonify(trilhas=trilhas_data), 200
+
+
+def create_trilha(data):
+    titulo = data.get('titulo')
+    descricao = data.get('descricao')
+
+    if not titulo or not descricao:
+        return jsonify({'message': 'Missing data'}), 400
+
+    nova_trilha = Trilha(titulo=titulo, descricao=descricao)
+    session = db.Session()
+    session.add(nova_trilha)
+    session.commit()
+
+    return jsonify({'message': 'Trilha created successfully'}), 201
+
+
+def get_trilha(id):
+    trilha = Trilha.query.get(id)
+    if trilha is None:
+        return jsonify({'message': 'Trilha not found'}), 404
+    return jsonify({'id': trilha.id, 'titulo': trilha.titulo, 'descricao': trilha.descricao}), 200
+
+
+def update_trilha(id, data):
+    trilha = Trilha.query.get(id)
+    if trilha is None:
+        return jsonify({'message': 'Trilha not found'}), 404
+
+    titulo = data.get('titulo')
+    descricao = data.get('descricao')
+
+    if not titulo or not descricao:
+        return jsonify({'message': 'Missing data'}), 400
+
+    trilha.titulo = titulo
+    trilha.descricao = descricao
+    session = db.Session()
+    session.commit()
+
+    return jsonify({'message': 'Trilha updated successfully'}), 200
+
+
+def delete_trilha(id):
+    trilha = Trilha.query.get(id)
+    if trilha is None:
+        return jsonify({'message': 'Trilha not found'}), 404
+
+    session = db.Session()
+    session.delete(trilha)
+    session.commit()
+
+    return jsonify({'message': 'Trilha deleted successfully'}), 200
