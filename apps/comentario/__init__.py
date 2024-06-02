@@ -1,5 +1,5 @@
 from flask import Blueprint
 
-trilhas_bp = Blueprint('trilhas', __name__)
+comentario_bp = Blueprint('comentario', __name__)
 
 from . import routes, models

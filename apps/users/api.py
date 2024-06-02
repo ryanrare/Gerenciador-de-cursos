@@ -7,7 +7,7 @@ from apps import db
 
 def user_by_username(username):
     try:
-        return User.query.filter(User.username == username).one()
+        return User.query.filter_by(username=username).first()
     except Exception as e:
         print(e)
         return None
@@ -23,8 +23,9 @@ def post_user():
         result = user_schema.dump(user)
         return jsonify({'message': 'user already exists', 'data': result}), 409
 
-    pass_hash = generate_password_hash(password)
-    user = User(username, email, pass_hash)
+    password_hash = generate_password_hash(password)
+
+    user = User(username, email, password_hash)
 
     try:
         session = db.Session()
@@ -91,7 +92,8 @@ def update_user(id_user):
         session.commit()
         return user_schema.jsonify(user), 200
     except Exception as e:
-        db.session.rollback()
+        session = db.Session()
+        session.rollback()
         return jsonify({'message': 'Error updating user', 'error': str(e)}), 500
 
 
@@ -101,9 +103,11 @@ def delete_user(id_user):
         return jsonify({'message': 'User not found'}), 404
 
     try:
-        db.session.delete(user)
-        db.session.commit()
+        session = db.Session()
+        session.delete(user)
+        session.commit()
         return jsonify({'message': 'User deleted'}), 200
     except Exception as e:
-        db.session.rollback()
+        session = db.Session()
+        session.rollback()
         return jsonify({'message': 'Error deleting user', 'error': str(e)}), 500

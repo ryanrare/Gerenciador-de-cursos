@@ -5,7 +5,6 @@ from flask_jwt_extended import jwt_required
 
 
 @users_bp.route('/')
-@jwt_required()
 def home():
     return get_users()
 
