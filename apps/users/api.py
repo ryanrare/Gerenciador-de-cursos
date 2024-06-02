@@ -57,3 +57,53 @@ def login_with_jwt():
         return jsonify(access_token=access_token), 200
     else:
         return jsonify({'message': 'Invalid credentials'}), 401
+
+
+def get_users():
+    users = User.query.all()
+    users_data = [{'id': user.id, 'username': user.username} for user in users]
+    return jsonify(users=users_data), 200
+
+
+def get_user(id):
+    user = User.query.get(id)
+    if user is None:
+        return jsonify({'message': 'User not found'}), 404
+    return user_schema.jsonify(user), 200
+
+
+def update_user(id_user):
+    user = User.query.get(id_user)
+    if user is None:
+        return jsonify({'message': 'User not found'}), 404
+
+    username = request.json.get('username')
+    email = request.json.get('email')
+    password = request.json.get('password')
+
+    user.username = username if username else user.username
+    user.email = email if email else user.email
+    if password:
+        user.password_hash = generate_password_hash(password)
+
+    try:
+        session = db.Session()
+        session.commit()
+        return user_schema.jsonify(user), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': 'Error updating user', 'error': str(e)}), 500
+
+
+def delete_user(id_user):
+    user = User.query.get(id_user)
+    if user is None:
+        return jsonify({'message': 'User not found'}), 404
+
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({'message': 'User deleted'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': 'Error deleting user', 'error': str(e)}), 500
