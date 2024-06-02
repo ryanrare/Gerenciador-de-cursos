@@ -53,7 +53,7 @@ def login_with_jwt():
 
     user = authenticate_user(username, password)
     if user:
-        access_token = create_access_token(identity=user.username)
+        access_token = create_access_token(identity=user.id)
         return jsonify(access_token=access_token), 200
     else:
         return jsonify({'message': 'Invalid credentials'}), 401
