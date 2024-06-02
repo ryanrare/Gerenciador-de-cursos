@@ -18,9 +18,8 @@ def create_trilha(data):
         return jsonify({'message': 'Missing data'}), 400
 
     nova_trilha = Trilha(titulo=titulo, descricao=descricao)
-    session = db.Session()
-    session.add(nova_trilha)
-    session.commit()
+    db.session.add(nova_trilha)
+    db.session.commit()
 
     return jsonify({'message': 'Trilha created successfully'}), 201
 
@@ -45,8 +44,7 @@ def update_trilha(id, data):
 
     trilha.titulo = titulo
     trilha.descricao = descricao
-    session = db.Session()
-    session.commit()
+    db.session.commit()
 
     return jsonify({'message': 'Trilha updated successfully'}), 200
 
@@ -56,9 +54,8 @@ def delete_trilha(id):
     if trilha is None:
         return jsonify({'message': 'Trilha not found'}), 404
 
-    session = db.Session()
-    session.delete(trilha)
-    session.commit()
+    db.session.delete(trilha)
+    db.session.commit()
 
     return jsonify({'message': 'Trilha deleted successfully'}), 200
 
