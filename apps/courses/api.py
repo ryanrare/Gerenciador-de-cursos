@@ -23,11 +23,11 @@ def create_curso(data):
         return jsonify({'message': 'Missing data'}), 400
 
     novo_curso = Curso(titulo=titulo, descricao=descricao)
-    session = db.Session()
-    session.add(novo_curso)
-    session.commit()
+    db.session.add(novo_curso)
+    db.session.commit()
 
-    return jsonify({'message': 'Curso created successfully'}), 201
+    curso_data = {'id': novo_curso.id, 'titulo': novo_curso.titulo, 'descricao': novo_curso.descricao}
+    return jsonify(curso=curso_data), 201
 
 
 def get_curso(id):
@@ -50,8 +50,7 @@ def update_curso(id, data):
 
     curso.titulo = titulo
     curso.descricao = descricao
-    session = db.Session()
-    session.commit()
+    db.session.commit()
 
     return jsonify({'message': 'Curso updated successfully'}), 200
 
@@ -61,10 +60,8 @@ def delete_curso(id):
     if curso is None:
         return jsonify({'message': 'Curso not found'}), 404
 
-    session = db.Session()
-    session.delete(curso)
-    session.commit()
-
+    db.session.delete(curso)
+    db.session.commit()
     return jsonify({'message': 'Curso deleted successfully'}), 200
 
 
@@ -93,10 +90,10 @@ def create_curso_comentario(curso_id):
         return jsonify({'message': 'Curso not found'}), 404
 
     descricao = request.json.get('descricao')
-    id_user = request.json.get('id_user')
+    id_user = get_jwt_identity()
 
-    if not descricao or not id_user:
-        return jsonify({'message': 'Missing data'}), 400
+    if not descricao:
+        return jsonify({'message': 'Missing data descricao'}), 400
 
     novo_comentario = Comentario(descricao=descricao, id_user=id_user)
     curso.comentarios.append(novo_comentario)
@@ -104,7 +101,12 @@ def create_curso_comentario(curso_id):
     try:
         db.session.add(novo_comentario)
         db.session.commit()
-        return jsonify({'message': 'Comentario created successfully'}), 201
+        comentario_data = {
+            'id': novo_comentario.id,
+            'descricao': novo_comentario.descricao,
+            'id_user': novo_comentario.id_user
+        }
+        return jsonify(comentario=comentario_data), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Unable to create comentario', 'error': str(e)}), 500
@@ -138,10 +140,10 @@ def create_curso_avaliacao(curso_id):
 
     valor = request.json.get('valor')
     descricao = request.json.get('descricao')
-    id_user = request.json.get('id_user')
+    id_user = get_jwt_identity()
 
-    if valor is None or not id_user:
-        return jsonify({'message': 'Missing data'}), 400
+    if valor is None:
+        return jsonify({'message': 'Missing data valor'}), 400
 
     nova_avaliacao = Avaliacao(valor=valor, descricao=descricao, id_user=id_user)
     curso.avaliacoes.append(nova_avaliacao)
@@ -149,7 +151,13 @@ def create_curso_avaliacao(curso_id):
     try:
         db.session.add(nova_avaliacao)
         db.session.commit()
-        return jsonify({'message': 'Avaliacao created successfully'}), 201
+        avaliacao_data = {
+            'id': nova_avaliacao.id,
+            'valor': nova_avaliacao.valor,
+            'descricao': nova_avaliacao.descricao,
+            'id_user': nova_avaliacao.id_user
+        }
+        return jsonify(avaliacao=avaliacao_data), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Unable to create avaliacao', 'error': str(e)}), 500
@@ -226,7 +234,8 @@ def create_curso_aula(curso_id):
     try:
         db.session.add(nova_aula)
         db.session.commit()
-        return jsonify({'message': 'Aula created successfully'}), 201
+        aula_data = {'id': nova_aula.id, 'titulo': nova_aula.titulo, 'descricao': nova_aula.descricao}
+        return jsonify(aula=aula_data), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Unable to create aula', 'error': str(e)}), 500
@@ -278,18 +287,20 @@ def create_curso_trilha(curso_id):
     descricao = request.json.get('descricao')
 
     if not titulo:
-        return jsonify({'message': 'Missing data'}), 400
+        return jsonify({'message': 'Missing required data: titulo'}), 400
 
     nova_trilha = Trilha(titulo=titulo, descricao=descricao)
+
     curso.trilhas_associadas.append(nova_trilha)
 
     try:
         db.session.add(nova_trilha)
         db.session.commit()
-        return jsonify({'message': 'Trilha created successfully'}), 201
+        trilha_data = {'id': nova_trilha.id, 'titulo': nova_trilha.titulo, 'descricao': nova_trilha.descricao}
+        return jsonify(trilha=trilha_data), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'message': 'Unable to create trilha', 'error': str(e)}), 500
+        return jsonify({'message': 'Unable to create Trilha', 'error': str(e)}), 500
 
 
 def delete_curso_trilha(curso_id, trilha_id):
@@ -323,11 +334,15 @@ def add_logged_in_user_to_curso(curso_id):
     if not user:
         return jsonify({'message': 'User not found'}), 404
 
+    if user in curso.users:
+        return jsonify({'message': 'User already enrolled in this Curso'}), 409
+
     curso.users.append(user)
 
     try:
         db.session.commit()
-        return jsonify({'message': 'User added to Curso successfully'}), 201
+        user_data = {'id': user.id, 'username': user.username}
+        return jsonify(user=user_data), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Unable to add User to Curso', 'error': str(e)}), 500

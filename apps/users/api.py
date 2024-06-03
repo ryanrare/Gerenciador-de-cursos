@@ -65,6 +65,8 @@ def get_users():
     return jsonify(users=users_data), 200
 
 
+from sqlalchemy import text
+
 def get_user(id):
     user = User.query.get(id)
     if user is None:
@@ -72,11 +74,34 @@ def get_user(id):
 
     user_data = user_schema.dump(user)
 
-    user_data.pop('password_hash', None)
+    trilhas_query = text("""
+        SELECT t.id, t.titulo, t.descricao
+        FROM trilha AS t
+        JOIN trilha_user AS tu ON t.id = tu.trilha_id
+        WHERE tu.user_id = :user_id
+    """)
 
-    user_data['comentarios'] = [{'id': comentario.id, 'descricao': comentario.descricao} for comentario in
-                                user.comentarios]
-    user_data['avaliacoes'] = [{'id': avaliacao.id, 'valor': avaliacao.valor} for avaliacao in user.avaliacoes]
+    cursos_query = text("""
+        SELECT c.id, c.titulo, c.descricao
+        FROM curso AS c
+        JOIN curso_user AS cu ON c.id = cu.curso_id
+        WHERE cu.user_id = :user_id
+    """)
+
+    trilhas_results = db.session.execute(trilhas_query, params={'user_id': user.id})
+    cursos_results = db.session.execute(cursos_query, params={'user_id': user.id})
+
+    trilhas_data = [
+        {'trilha_id': result[0], 'trilha_titulo': result[1], 'trilha_descricao': result[2]}
+        for result in trilhas_results
+    ]
+    cursos_data = [
+        {'curso_id': result[0], 'curso_titulo': result[1], 'curso_descricao': result[2]}
+        for result in cursos_results
+    ]
+
+    user_data['trilhas'] = trilhas_data
+    user_data['cursos'] = cursos_data
 
     return jsonify(user_data), 200
 
