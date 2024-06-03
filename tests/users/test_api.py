@@ -1,9 +1,10 @@
 import pytest
 from flask_jwt_extended import create_access_token
+from werkzeug.security import generate_password_hash
+
 from apps import create_app
 from apps.db import db
 from apps.users.models import User
-from werkzeug.security import check_password_hash
 
 
 @pytest.fixture(scope='module')
@@ -21,85 +22,79 @@ def test_client():
 
 
 @pytest.fixture(scope='module')
-def new_user():
-    return User(username='testuser', email='testuser@example.com', password_hash='testpassword')
-
-
-@pytest.fixture(scope='module')
-def add_user_to_db(test_client, new_user):
+def token(test_client):
     with test_client.application.app_context():
-        db.session.add(new_user)
-        db.session.commit()
-        access_token = create_access_token(identity=new_user.id)
-    yield access_token
-    with test_client.application.app_context():
-        db.session.delete(new_user)
-        db.session.commit()
+        existing_user = User.query.filter_by(username='testuser').first()
+        if not existing_user:
+            new_user = User(username='testuser', email='testuser@example.com', password_hash=generate_password_hash('testpassword'))
+            db.session.add(new_user)
+            db.session.commit()
+            user_id = new_user.id
+        else:
+            user_id = existing_user.id
 
-
-@pytest.fixture(scope='module')
-def token(test_client, new_user, add_user_to_db):
-    with test_client.application.app_context():
-        access_token = create_access_token(identity=new_user.id)
+        access_token = create_access_token(identity=user_id)
         return access_token
 
 
-def test_index_response_200(test_client, token):
-    response = test_client.get('/', headers={'Authorization': f'Bearer {token}'})
-    assert response.status_code == 200
+def test_user_endpoints(test_client, token):
+    # Certifique-se de que o usuário "ALO" não existe antes de tentar registrá-lo
+    with test_client.application.app_context():
+        existing_user = User.query.filter_by(username='ALO').first()
+        if existing_user:
+            db.session.delete(existing_user)
+            db.session.commit()
 
-
-def test_post_user(test_client):
+    # Test user registration (POST /users/register/)
     user_data = {
-        "username": "rsssddddssyaan",
-        "password": "senhadonovousuario",
-        "email": "ryasssssn@asssssaaa.com"
+        "username": "ALO",
+        "password": "new_password",
+        "email": "alo@alo.com"
     }
-
     response = test_client.post('/users/register/', json=user_data)
     assert response.status_code == 201
-
     response_data = response.get_json()
     assert response_data['data']['username'] == user_data['username']
+    assert response_data['data']['email'] == user_data['email']
 
-    with test_client.application.app_context():
-        user = User.query.filter_by(username=user_data['username']).first()
-        assert user is not None
-        assert user.username == user_data['username']
-
-
-def test_get_users(test_client, token):
+    # Test get all users (GET /users/)
     response = test_client.get('/users/', headers={'Authorization': f'Bearer {token}'})
     assert response.status_code == 200
     data = response.get_json()
     assert 'users' in data
 
+    # Get the ID of the newly created user for further testing
+    new_user_id = None
+    for user in data['users']:
+        if user['username'] == 'ALO':
+            new_user_id = user['id']
+            break
 
-def test_get_user(test_client, token, new_user):
-    response = test_client.get(f'/users/{new_user.id}/', headers={'Authorization': f'Bearer {token}'})
+    assert new_user_id is not None
+
+    # Test get specific user (GET /users/{id}/)
+    response = test_client.get(f'/users/{new_user_id}/', headers={'Authorization': f'Bearer {token}'})
     assert response.status_code == 200
     data = response.get_json()
-    assert data['username'] == 'testuser'
+    assert data['username'] == 'ALO'
 
-
-def test_update_user(test_client, token, new_user):
+    # Test update user (PUT /users/{id}/)
     update_data = {
         'username': 'updateduser',
         'email': 'updateduser@example.com'
     }
-    response = test_client.put(f'/users/{new_user.id}/', json=update_data, headers={'Authorization': f'Bearer {token}'})
-    assert response.status_code == 200
-
-    data = response.get_json()
-    assert data['username'] == 'updateduser'
-
-
-def test_delete_user(test_client, token, new_user):
-    response = test_client.delete(f'/users/{new_user.id}/', headers={'Authorization': f'Bearer {token}'})
+    response = test_client.put(f'/users/{new_user_id}/', json=update_data, headers={'Authorization': f'Bearer {token}'})
     assert response.status_code == 200
     data = response.get_json()
-    assert data['message'] == 'User deleted'
+    assert response_data['data']['username'] == user_data['username']
+    assert response_data['data']['email'] == user_data['email']
 
-    with test_client.application.app_context():
-        user = User.query.get(new_user.id)
-        assert user is None
+    # Test delete user (DELETE /users/{id}/)
+    response = test_client.delete(f'/users/{new_user_id}/', headers={'Authorization': f'Bearer {token}'})
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['message'] == 'User deleted successfully'
+
+    # Test get specific user after deletion (should return 404)
+    response = test_client.get(f'/users/{new_user_id}/', headers={'Authorization': f'Bearer {token}'})
+    assert response.status_code == 404

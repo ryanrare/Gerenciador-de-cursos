@@ -3,6 +3,7 @@ from flask import jsonify, request
 from flask_jwt_extended import create_access_token
 from .models import User, user_schema
 from apps.db import db
+from apps.utils.query_sql import trilhas_query, cursos_query
 
 
 def user_by_username(username):
@@ -65,28 +66,12 @@ def get_users():
     return jsonify(users=users_data), 200
 
 
-from sqlalchemy import text
-
 def get_user(id):
     user = User.query.get(id)
     if user is None:
         return jsonify({'message': 'User not found'}), 404
 
     user_data = user_schema.dump(user)
-
-    trilhas_query = text("""
-        SELECT t.id, t.titulo, t.descricao
-        FROM trilha AS t
-        JOIN trilha_user AS tu ON t.id = tu.trilha_id
-        WHERE tu.user_id = :user_id
-    """)
-
-    cursos_query = text("""
-        SELECT c.id, c.titulo, c.descricao
-        FROM curso AS c
-        JOIN curso_user AS cu ON c.id = cu.curso_id
-        WHERE cu.user_id = :user_id
-    """)
 
     trilhas_results = db.session.execute(trilhas_query, params={'user_id': user.id})
     cursos_results = db.session.execute(cursos_query, params={'user_id': user.id})
@@ -136,7 +121,7 @@ def delete_user(id_user):
     try:
         db.session.delete(user)
         db.session.commit()
-        return jsonify({'message': 'User deleted'}), 200
+        return jsonify({'message': 'User deleted successfully'}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Error deleting user', 'error': str(e)}), 500
