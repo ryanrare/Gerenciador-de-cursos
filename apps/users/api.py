@@ -106,3 +106,5 @@ def delete_user(id_user):
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Error deleting user', 'error': str(e)}), 500
+
+

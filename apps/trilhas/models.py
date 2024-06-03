@@ -1,11 +1,6 @@
 from apps.db import db
-from apps.utils.association_tables import trilha_curso
+from apps.utils.association_tables import trilha_curso, trilha_aula, trilha_user
 
-
-trilha_aula = db.Table('trilha_aula',
-    db.Column('trilha_id', db.Integer, db.ForeignKey('trilha.id'), primary_key=True),
-    db.Column('aula_id', db.Integer, db.ForeignKey('aula.id'), primary_key=True)
-)
 
 trilha_comentario = db.Table('trilha_comentario',
     db.Column('trilha_id', db.Integer, db.ForeignKey('trilha.id'), primary_key=True),
@@ -15,11 +10,6 @@ trilha_comentario = db.Table('trilha_comentario',
 trilha_avaliacao = db.Table('trilha_avaliacao',
     db.Column('trilha_id', db.Integer, db.ForeignKey('trilha.id'), primary_key=True),
     db.Column('avaliacao_id', db.Integer, db.ForeignKey('avaliacao.id'), primary_key=True)
-)
-
-trilha_user = db.Table('trilha_user',
-    db.Column('trilha_id', db.Integer, db.ForeignKey('trilha.id'), primary_key=True),
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True)
 )
 
 
