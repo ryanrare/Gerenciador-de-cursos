@@ -1,8 +1,11 @@
 from flask import jsonify, request
+from flask_jwt_extended import get_jwt_identity
 from .models import Curso
 from apps.avaliacao.models import Avaliacao
 from apps.aulas.models import Aula
 from apps.comentario.models import Comentario
+from apps.users.models import User
+from apps.trilhas.models import Trilha
 from apps.db import db
 
 
@@ -245,3 +248,114 @@ def delete_curso_aula(curso_id, aula_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Unable to delete aula', 'error': str(e)}), 500
+
+
+"""CRUD DE CURSO E SUAS TRILHAS"""
+
+
+def get_curso_trilhas(curso_id):
+    curso = Curso.query.get(curso_id)
+    if not curso:
+        return jsonify({'message': 'Curso not found'}), 404
+
+    trilhas = curso.trilhas_associadas
+    trilhas_data = [
+        {
+            'id': trilha.id,
+            'titulo': trilha.titulo,
+            'descricao': trilha.descricao
+        } for trilha in trilhas
+    ]
+    return jsonify(trilhas=trilhas_data), 200
+
+
+def create_curso_trilha(curso_id):
+    curso = Curso.query.get(curso_id)
+    if not curso:
+        return jsonify({'message': 'Curso not found'}), 404
+
+    titulo = request.json.get('titulo')
+    descricao = request.json.get('descricao')
+
+    if not titulo:
+        return jsonify({'message': 'Missing data'}), 400
+
+    nova_trilha = Trilha(titulo=titulo, descricao=descricao)
+    curso.trilhas_associadas.append(nova_trilha)
+
+    try:
+        db.session.add(nova_trilha)
+        db.session.commit()
+        return jsonify({'message': 'Trilha created successfully'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': 'Unable to create trilha', 'error': str(e)}), 500
+
+
+def delete_curso_trilha(curso_id, trilha_id):
+    curso = Curso.query.get(curso_id)
+    if not curso:
+        return jsonify({'message': 'Curso not found'}), 404
+
+    trilha = Trilha.query.get(trilha_id)
+    if not trilha or trilha not in curso.trilhas_associadas:
+        return jsonify({'message': 'Trilha not found in this Curso'}), 404
+
+    try:
+        curso.trilhas_associadas.remove(trilha)
+        db.session.commit()
+        return jsonify({'message': 'Trilha deleted successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': 'Unable to delete trilha', 'error': str(e)}), 500
+
+
+"""CRUD DE CURSO E SEUS USUARIOS/INSCRITOS"""
+
+
+def add_logged_in_user_to_curso(curso_id):
+    curso = Curso.query.get(curso_id)
+    if not curso:
+        return jsonify({'message': 'Curso not found'}), 404
+
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+
+    curso.users.append(user)
+
+    try:
+        db.session.commit()
+        return jsonify({'message': 'User added to Curso successfully'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': 'Unable to add User to Curso', 'error': str(e)}), 500
+
+
+def get_curso_users(curso_id):
+    curso = Curso.query.get(curso_id)
+    if not curso:
+        return jsonify({'message': 'Curso not found'}), 404
+
+    users = curso.users
+    users_data = [{'id': user.id, 'username': user.username, 'email': user.email} for user in users]
+    return jsonify(users=users_data), 200
+
+
+def remove_user_from_curso(curso_id, user_id):
+    curso = Curso.query.get(curso_id)
+    if not curso:
+        return jsonify({'message': 'Curso not found'}), 404
+
+    user = User.query.get(user_id)
+    if not user or user not in curso.users:
+        return jsonify({'message': 'User not found in this Curso'}), 404
+
+    try:
+        curso.users.remove(user)
+        db.session.commit()
+        return jsonify({'message': 'User removed from Curso successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': 'Unable to remove User from Curso', 'error': str(e)}), 500

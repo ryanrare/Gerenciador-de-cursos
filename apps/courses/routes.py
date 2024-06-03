@@ -3,7 +3,9 @@ from flask_jwt_extended import jwt_required
 from .api import (get_all_cursos, create_curso, get_curso, update_curso, delete_curso,
                   get_curso_comentarios, create_curso_comentario, delete_curso_comentario,
                   get_curso_avaliacoes, create_curso_avaliacao, delete_curso_avaliacao,
-                  get_curso_aulas, create_curso_aula, delete_curso_aula)
+                  get_curso_aulas, create_curso_aula, delete_curso_aula,
+                  get_curso_trilhas, create_curso_trilha, delete_curso_trilha,
+                  get_curso_users, add_logged_in_user_to_curso, remove_user_from_curso)
 from . import courses_bp
 
 
@@ -91,3 +93,39 @@ def add_aula(curso_id):
 @jwt_required()
 def remove_aula(curso_id, aula_id):
     return delete_curso_aula(curso_id, aula_id)
+
+
+@courses_bp.route('/<int:curso_id>/trilhas/', methods=['GET'])
+@jwt_required()
+def get_curso_trilhas_route(curso_id):
+    return get_curso_trilhas(curso_id)
+
+
+@courses_bp.route('/<int:curso_id>/trilhas/', methods=['POST'])
+@jwt_required()
+def create_curso_trilha_route(curso_id):
+    return create_curso_trilha(curso_id)
+
+
+@courses_bp.route('/<int:curso_id>/trilhas/<int:trilha_id>/', methods=['DELETE'])
+@jwt_required()
+def delete_curso_trilha_route(curso_id, trilha_id):
+    return delete_curso_trilha(curso_id, trilha_id)
+
+
+@courses_bp.route('/<int:curso_id>/users/', methods=['GET'])
+@jwt_required()
+def get_curso_users_route(curso_id):
+    return get_curso_users(curso_id)
+
+
+@courses_bp.route('/<int:curso_id>/users/', methods=['POST'])
+@jwt_required()
+def add_logged_in_user_to_curso_route(curso_id):
+    return add_logged_in_user_to_curso(curso_id)
+
+
+@courses_bp.route('/<int:curso_id>/users/<int:user_id>/', methods=['DELETE'])
+@jwt_required()
+def remove_user_from_curso_route(curso_id, user_id):
+    return remove_user_from_curso(curso_id, user_id)

@@ -1,9 +1,6 @@
 from apps.db import db
+from apps.utils.association_tables import curso_user
 
-curso_user = db.Table('curso_user',
-                      db.Column('curso_id', db.Integer, db.ForeignKey('curso.id'), primary_key=True),
-                      db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True)
-                      )
 
 curso_aula = db.Table('curso_aula',
                       db.Column('curso_id', db.Integer, db.ForeignKey('curso.id'), primary_key=True),
