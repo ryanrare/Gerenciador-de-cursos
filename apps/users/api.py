@@ -69,7 +69,16 @@ def get_user(id):
     user = User.query.get(id)
     if user is None:
         return jsonify({'message': 'User not found'}), 404
-    return user_schema.jsonify(user), 200
+
+    user_data = user_schema.dump(user)
+
+    user_data.pop('password_hash', None)
+
+    user_data['comentarios'] = [{'id': comentario.id, 'descricao': comentario.descricao} for comentario in
+                                user.comentarios]
+    user_data['avaliacoes'] = [{'id': avaliacao.id, 'valor': avaliacao.valor} for avaliacao in user.avaliacoes]
+
+    return jsonify(user_data), 200
 
 
 def update_user(id_user):
