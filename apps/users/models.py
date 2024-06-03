@@ -6,7 +6,6 @@ from apps.avaliacao.models import Avaliacao
 from apps.utils.association_tables import trilha_user
 
 
-
 class User(db.Model):
     __tablename__ = 'users'
 

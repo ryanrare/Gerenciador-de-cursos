@@ -28,7 +28,7 @@ def create_trilha(data):
     db.session.add(nova_trilha)
     db.session.commit()
 
-    return jsonify({'message': 'Trilha created successfully'}), 201
+    return jsonify({'id': nova_trilha.id, 'titulo': nova_trilha.titulo, 'descricao': nova_trilha.descricao}), 201
 
 
 def get_trilha(id):
@@ -91,10 +91,10 @@ def create_trilha_comentario(trilha_id):
         return jsonify({'message': 'Trilha not found'}), 404
 
     descricao = request.json.get('descricao')
-    id_user = request.json.get('id_user')
 
-    if not descricao or not id_user:
-        return jsonify({'message': 'Missing data'}), 400
+    id_user = get_jwt_identity()
+    if not descricao:
+        return jsonify({'message': 'Missing data descricao'}), 400
 
     novo_comentario = Comentario(descricao=descricao, id_user=id_user)
     trilha.comentarios.append(novo_comentario)
@@ -102,7 +102,13 @@ def create_trilha_comentario(trilha_id):
     try:
         db.session.add(novo_comentario)
         db.session.commit()
-        return jsonify({'message': 'Comentario created successfully'}), 201
+
+        comentario_data = {
+            'id': novo_comentario.id,
+            'descricao': novo_comentario.descricao,
+            'id_user': novo_comentario.id_user
+        }
+        return jsonify(comentario=comentario_data), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Unable to create comentario', 'error': str(e)}), 500
@@ -146,10 +152,10 @@ def create_trilha_avaliacao(trilha_id):
 
     valor = request.json.get('valor')
     descricao = request.json.get('descricao')
-    id_user = request.json.get('id_user')
+    id_user = get_jwt_identity()
 
-    if valor is None or not id_user:
-        return jsonify({'message': 'Missing data'}), 400
+    if valor is None:
+        return jsonify({'message': 'Missing data valor'}), 400
 
     nova_avaliacao = Avaliacao(valor=valor, descricao=descricao, id_user=id_user)
     trilha.avaliacoes.append(nova_avaliacao)
@@ -157,7 +163,14 @@ def create_trilha_avaliacao(trilha_id):
     try:
         db.session.add(nova_avaliacao)
         db.session.commit()
-        return jsonify({'message': 'Avaliacao created successfully'}), 201
+
+        avaliacao_data = {
+            'id': nova_avaliacao.id,
+            'valor': nova_avaliacao.valor,
+            'descricao': nova_avaliacao.descricao,
+            'id_user': nova_avaliacao.id_user
+        }
+        return jsonify(avaliacao=avaliacao_data), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Unable to create avaliacao', 'error': str(e)}), 500
@@ -198,11 +211,15 @@ def create_trilha_curso(trilha_id):
     if not curso:
         return jsonify({'message': 'Curso not found'}), 404
 
-    trilha.cursos.append(curso)
+    if curso in trilha.cursos_associados:
+        return jsonify({'message': 'Curso already associated with this Trilha'}), 409
+
+    trilha.cursos_associados.append(curso)
 
     try:
         db.session.commit()
-        return jsonify({'message': 'Curso added to Trilha successfully'}), 201
+        curso_data = {'id': curso.id, 'titulo': curso.titulo, 'descricao': curso.descricao}
+        return jsonify(curso=curso_data), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Unable to add Curso to Trilha', 'error': str(e)}), 500
@@ -213,7 +230,7 @@ def get_trilha_cursos(trilha_id):
     if not trilha:
         return jsonify({'message': 'Trilha not found'}), 404
 
-    cursos = trilha.cursos
+    cursos = trilha.cursos_associados
     cursos_data = [{'id': curso.id, 'titulo': curso.titulo, 'descricao': curso.descricao} for curso in cursos]
     return jsonify(cursos=cursos_data), 200
 
@@ -224,7 +241,7 @@ def delete_trilha_curso(trilha_id, curso_id):
         return jsonify({'message': 'Trilha not found'}), 404
 
     curso = Curso.query.get(curso_id)
-    if not curso or curso not in trilha.cursos:
+    if not curso or curso not in trilha.cursos_associados   :
         return jsonify({'message': 'Curso not found in this Trilha'}), 404
 
     try:
@@ -252,11 +269,15 @@ def create_trilha_aula(trilha_id):
     if not aula:
         return jsonify({'message': 'Aula not found'}), 404
 
+    if aula in trilha.aulas:
+        return jsonify({'message': 'Aula already associated with this Trilha'}), 409
+
     trilha.aulas.append(aula)
 
     try:
         db.session.commit()
-        return jsonify({'message': 'Aula added to Trilha successfully'}), 201
+        aula_data = {'id': aula.id, 'titulo': aula.titulo, 'descricao': aula.descricao}
+        return jsonify(aula=aula_data), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Unable to add Aula to Trilha', 'error': str(e)}), 500
@@ -303,11 +324,15 @@ def add_logged_in_user_to_trilha(trilha_id):
     if not user:
         return jsonify({'message': 'User not found'}), 404
 
+    if user in trilha.users:
+        return jsonify({'message': 'User already enrolled in this Trilha'}), 409
+
     trilha.users.append(user)
 
     try:
         db.session.commit()
-        return jsonify({'message': 'User added to Trilha successfully'}), 201
+        user_data = {'id': user.id, 'username': user.username}
+        return jsonify(user=user_data), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': 'Unable to add User to Trilha', 'error': str(e)}), 500
