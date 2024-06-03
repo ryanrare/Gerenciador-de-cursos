@@ -1,9 +1,6 @@
 from apps.db import db
+from apps.utils.association_tables import trilha_curso
 
-trilha_curso = db.Table('trilha_curso',
-    db.Column('trilha_id', db.Integer, db.ForeignKey('trilha.id'), primary_key=True),
-    db.Column('curso_id', db.Integer, db.ForeignKey('curso.id'), primary_key=True)
-)
 
 trilha_aula = db.Table('trilha_aula',
     db.Column('trilha_id', db.Integer, db.ForeignKey('trilha.id'), primary_key=True),
@@ -33,7 +30,7 @@ class Trilha(db.Model):
     titulo = db.Column(db.String(100), nullable=False)
     descricao = db.Column(db.Text)
 
-    cursos = db.relationship('Curso', secondary=trilha_curso, lazy='subquery', backref=db.backref('trilhas', lazy=True))
+    cursos_associados = db.relationship('Curso', secondary=trilha_curso, lazy='subquery', backref=db.backref('trilhas', lazy=True))
     aulas = db.relationship('Aula', secondary=trilha_aula, lazy='subquery', backref=db.backref('trilhas', lazy=True))
     comentarios = db.relationship('Comentario', secondary=trilha_comentario, lazy='subquery', backref=db.backref('trilhas', lazy=True))
     users = db.relationship('User', secondary=trilha_user, lazy='subquery', backref=db.backref('trilhas', lazy=True))
