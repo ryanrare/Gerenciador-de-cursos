@@ -1,4 +1,4 @@
-# Teste Prático da empresa V4Company
+# Api para gerenciar cursos e trilhas
 
 ## Planejamento Geral:
 
